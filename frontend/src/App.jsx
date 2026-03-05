@@ -6,14 +6,23 @@ import { useAppStore } from "./stores/appStore";
 import { requestForToken, onMessageListener } from "./firebase";
 import api from "./utils/api";
 
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "./components/Navbar";
-import AdminDashboard from "./pages/AdminDashboard";
 import AuthPage from "./pages/AuthPage";
-import BuyerDashboard from "./pages/BuyerDashboard";
-import FarmerDashboard from "./pages/FarmerDashboard";
 import MarketplacePage from "./pages/MarketplacePage";
-import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage from "./pages/ProfilePage";
+import NotificationsPage from "./pages/NotificationsPage";
+import FarmerDashboard from "./pages/FarmerDashboard";
+import BuyerDashboard from "./pages/BuyerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+
+import HomePage from "./pages/HomePage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
+import MessagesPage from "./pages/MessagesPage";
+import AddProductPage from "./pages/AddProductPage";
 
 // ── Offline indicator ─────────────────────────────────────────────────────
 function OfflineBar() {
@@ -44,100 +53,99 @@ function OfflineBar() {
 }
 
 // ── Page transition wrapper ───────────────────────────────────────────────
-function PageTransition({ children, pageKey }) {
-  return children;
-  /*
-  const { AnimatePresence, motion } = require("motion/react");
+function PageTransition({ children }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -10 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="w-full flex-1 flex flex-col"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function AnimatedRoutes() {
+  const { currentUser } = useAppStore();
+  const location = useLocation();
+
   return (
     <AnimatePresence mode="wait">
-      <motion.div
-        key={pageKey}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-      >
-        {children}
-      </motion.div>
+      <Routes location={location} key={location.pathname}>
+        {/* Public Routes */}
+        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+        <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
+        <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
+        <Route path="/login" element={!currentUser ? <PageTransition><AuthPage /></PageTransition> : <Navigate to="/" />} />
+
+        {/* Protected Routes */}
+        <Route path="/marketplace" element={currentUser ? <PageTransition><MarketplacePage /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/product/:id" element={currentUser ? <PageTransition><ProductDetailPage /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/profile" element={currentUser ? <PageTransition><ProfilePage /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/notifications" element={currentUser ? <PageTransition><NotificationsPage /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/messages" element={currentUser ? <PageTransition><MessagesPage /></PageTransition> : <Navigate to="/login" />} />
+
+        {/* Dashboard Routing */}
+        <Route
+          path="/dashboard"
+          element={
+            !currentUser ? <Navigate to="/login" /> :
+              <PageTransition>
+                {currentUser.role === "admin" ? <AdminDashboard /> :
+                  currentUser.role === "farmer" ? <FarmerDashboard /> :
+                    <BuyerDashboard />}
+              </PageTransition>
+          }
+        />
+
+        <Route path="/add-product" element={currentUser?.role === "farmer" ? <PageTransition><AddProductPage /></PageTransition> : <Navigate to="/marketplace" />} />
+
+        {/* Admin only */}
+        <Route path="/admin" element={currentUser?.role === "admin" ? <PageTransition><AdminDashboard /></PageTransition> : <Navigate to="/" />} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </AnimatePresence>
   );
-  */
 }
 
 // ── Main app ──────────────────────────────────────────────────────────────
 export default function App() {
-  const { currentUser, currentPage } = useAppStore();
-
-  // Not logged in → show auth
-  if (!currentUser) {
-    return (
-      <>
-        <AuthPage />
-        <Toaster position="top-right" richColors />
-        <OfflineBar />
-      </>
-    );
-  }
-
-  // Render page based on currentPage
-  function renderPage() {
-    switch (currentPage) {
-      case "farmerDashboard":
-        return currentUser?.role === "farmer" ||
-          currentUser?.role === "admin" ? (
-          <FarmerDashboard />
-        ) : (
-          <MarketplacePage />
-        );
-      case "buyerDashboard":
-        return currentUser?.role === "buyer" ||
-          currentUser?.role === "admin" ? (
-          <BuyerDashboard />
-        ) : (
-          <MarketplacePage />
-        );
-      case "notifications":
-        return <NotificationsPage />;
-      case "profile":
-        return <ProfilePage />;
-      case "admin":
-        return currentUser?.role === "admin" ? (
-          <AdminDashboard />
-        ) : (
-          <MarketplacePage />
-        );
-      default:
-        return <MarketplacePage />;
-    }
-  }
+  const { currentUser } = useAppStore();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
+    <Router>
+      <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+        {currentUser && <Navbar />}
 
-      <main className="flex-1">
-        <PageTransition pageKey={currentPage}>{renderPage()}</PageTransition>
-      </main>
+        <main className="flex-1 flex flex-col">
+          <AnimatedRoutes />
+        </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card py-4 px-4 sm:px-6">
-        <p className="text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()}{" "}
-          <span className="font-medium text-foreground">Local Connect</span>.
-          Built with ❤️ team{" "}
-          <a
-            href={``}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-primary transition-colors"
-          >
-            system.in
-          </a>
-        </p>
-      </footer>
+        {currentUser && (
+          <footer className="border-t border-border bg-card py-4 px-4 sm:px-6">
+            <p className="text-center text-xs text-muted-foreground">
+              © {new Date().getFullYear()}{" "}
+              <span className="font-medium text-foreground">Local Connect</span>.
+              Built with ❤️ team{" "}
+              <a
+                href={``}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-primary transition-colors"
+              >
+                system.in
+              </a>
+            </p>
+          </footer>
+        )}
 
-      <Toaster position="top-right" richColors />
-      <OfflineBar />
-    </div>
+        <Toaster position="top-right" richColors />
+        <OfflineBar />
+      </div>
+    </Router>
   );
 }

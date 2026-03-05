@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { motion } from "framer-motion";
 import {
   Calendar,
   Edit3,
@@ -23,10 +24,11 @@ import {
   Star,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAppStore } from "../stores/appStore";
+import { getProfile, updateProfile } from "../utils/api";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -43,6 +45,32 @@ export default function ProfilePage() {
   const [location, setLocation] = useState(currentUser?.location ?? "");
   const [lang, setLang] = useState(currentUser?.language ?? "en");
   const [isSaving, setIsSaving] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch profile from backend on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getProfile();
+        if (data.success) {
+          setProfileData(data.profile);
+          setCurrentUser(data.user);
+          setName(data.user.name || '');
+          setLocation(data.user.location || '');
+          setLang(data.user.language || 'en');
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (currentUser) {
+      fetchProfile();
+    }
+  }, []);
 
   if (!currentUser) return null;
 
@@ -80,8 +108,8 @@ export default function ProfilePage() {
           <Star
             key={i}
             className={`w-4 h-4 ${i <= Math.round(rating)
-                ? "fill-farm-amber text-farm-amber"
-                : "text-muted-foreground"
+              ? "fill-farm-amber text-farm-amber"
+              : "text-muted-foreground"
               }`}
           />
         ))}
@@ -95,17 +123,26 @@ export default function ProfilePage() {
       return;
     }
     setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setCurrentUser({
-      ...currentUser,
-      name: name.trim(),
-      location: location.trim(),
-      language: lang,
-    });
-    setLanguage(lang);
-    setIsSaving(false);
-    setIsEditing(false);
-    toast.success(t("profile.saved"));
+    try {
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("location", location.trim());
+      formData.append("language", lang);
+
+      const data = await updateProfile(formData);
+      if (data.success) {
+        setCurrentUser(data.user);
+        setProfileData(data.profile);
+        setLanguage(lang);
+        toast.success(t("profile.saved"));
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+      setIsEditing(false);
+    }
   }
 
   function handleCancel() {
@@ -116,8 +153,13 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="font-display font-bold text-2xl text-foreground mb-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-2xl mx-auto px-4 sm:px-6 py-12"
+    >
+      <h1 className="font-display font-bold text-3xl text-foreground mb-8">
         {t("profile.title")}
       </h1>
 
@@ -295,7 +337,7 @@ export default function ProfilePage() {
             <Star className="w-4 h-4 text-farm-amber" />
             {t("profile.rating")} & {t("profile.reviews")}
           </h3>
-          {currentUser.ratingCount === 0 ? (
+          {(currentUser.ratingCount || 0) === 0 ? (
             <p className="text-sm text-muted-foreground">
               No ratings yet. Complete more transactions to get rated.
             </p>
@@ -304,11 +346,11 @@ export default function ProfilePage() {
               <div className="flex items-center gap-4">
                 <div className="text-center">
                   <div className="font-display font-bold text-4xl text-foreground">
-                    {currentUser.rating.toFixed(1)}
+                    {(currentUser.rating || 0).toFixed(1)}
                   </div>
-                  <div className="mt-1">{renderStars(currentUser.rating)}</div>
+                  <div className="mt-1">{renderStars(currentUser.rating || 0)}</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {currentUser.ratingCount} reviews
+                    {currentUser.ratingCount || 0} reviews
                   </div>
                 </div>
                 <div className="flex-1 space-y-1.5">
@@ -347,6 +389,6 @@ export default function ProfilePage() {
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

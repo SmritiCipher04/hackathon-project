@@ -17,8 +17,8 @@ export default {
     extend: {
       fontFamily: {
         display: ['"Bricolage Grotesque"', '"Cabinet Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        body: ['"General Sans"', '"Outfit"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        sans: ['"General Sans"', '"Outfit"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        body: ['"Inter"', '"General Sans"', '"Outfit"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"Inter"', '"General Sans"', '"Outfit"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "oklch(var(--border))",

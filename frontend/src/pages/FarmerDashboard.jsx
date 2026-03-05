@@ -30,11 +30,12 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAppStore } from "../stores/appStore";
+import { createPost, updatePost, deletePost as deletePostApi, getAllPosts } from "../utils/api";
 
 // ── Interest status badge ─────────────────────────────────────────────────
 function StatusBadge({ status }) {
@@ -73,12 +74,14 @@ function ListingForm({
   const [quantity, setQuantity] = useState(initial?.quantity ?? "");
   const [location, setLocation] = useState(initial?.location ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [imagePreview, setImagePreview] = useState(initial?.imageUrl ?? "");
+  const [imagePreview, setImagePreview] = useState(initial?.images?.[0] || initial?.imageUrl || "");
+  const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
 
   function handleImageChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImageFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setImagePreview(ev.target?.result);
@@ -105,8 +108,7 @@ function ListingForm({
       quantity: quantity.trim(),
       location: location.trim(),
       description: description.trim(),
-      imageUrl:
-        imagePreview || "/assets/generated/crop-spinach.dim_400x300.jpg",
+      imageFile: imageFile,
       status: "active",
     });
   }
@@ -277,8 +279,9 @@ export default function FarmerDashboard() {
   const {
     currentUser,
     products,
+    setProducts,
     addProduct,
-    updateProduct,
+    updateProduct: updateProductStore,
     deleteProduct,
     interests,
     updateInterestStatus,
@@ -289,45 +292,117 @@ export default function FarmerDashboard() {
   const [editProduct, setEditProduct] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const myProducts = products.filter((p) => p.farmerId === currentUser?.id);
+  // Fetch user's posts from backend on mount
+  useEffect(() => {
+    const fetchMyPosts = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getAllPosts();
+        if (data.success) {
+          setProducts(data.posts);
+        }
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchMyPosts();
+  }, []);
+
+  const myProducts = products.filter(
+    (p) => (p.userId?._id || p.userId) === currentUser?.id || p.farmerId === currentUser?.id
+  );
   const myInterests = interests.filter((i) => i.farmerId === currentUser?.id);
   const pendingCount = myInterests.filter((i) => i.status === "pending").length;
 
   async function handleAddProduct(data) {
     setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
-    addProduct({
-      id: `prod-${Date.now()}`,
-      farmerId: currentUser.id,
-      farmerName: currentUser.name,
-      createdAt: new Date(),
-      ...data,
-    });
-    setIsSaving(false);
-    setIsAddOpen(false);
-    toast.success(t("products.listingAdded"));
+    try {
+      const formData = new FormData();
+      formData.append('cropName', data.cropName);
+      formData.append('price', data.price);
+      formData.append('quantity', data.quantity);
+      formData.append('location', data.location);
+      formData.append('description', data.description);
+      if (data.imageFile) {
+        formData.append('images', data.imageFile);
+      }
+
+      const result = await createPost(formData);
+      if (result.success) {
+        addProduct(result.post);
+        toast.success(t("products.listingAdded"));
+        console.log(`✅ Card data successfully saved to collection: farmer_post`);
+      }
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast.error('Failed to create listing');
+    } finally {
+      setIsSaving(false);
+      setIsAddOpen(false);
+    }
   }
 
   async function handleEditProduct(data) {
     if (!editProduct) return;
     setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
-    updateProduct(editProduct.id, data);
-    setIsSaving(false);
-    setEditProduct(null);
-    toast.success(t("products.listingUpdated"));
+    try {
+      const formData = new FormData();
+      formData.append('cropName', data.cropName);
+      formData.append('price', data.price);
+      formData.append('quantity', data.quantity);
+      formData.append('location', data.location);
+      formData.append('description', data.description);
+      if (data.imageFile) {
+        formData.append('images', data.imageFile);
+      }
+
+      const postId = editProduct._id || editProduct.id;
+      const result = await updatePost(postId, formData);
+      if (result.success) {
+        updateProductStore(postId, result.post);
+        toast.success(t("products.listingUpdated"));
+      }
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast.error('Failed to update listing');
+    } finally {
+      setIsSaving(false);
+      setEditProduct(null);
+    }
   }
 
-  function handleDelete(id) {
-    deleteProduct(id);
-    setDeleteConfirm(null);
-    toast.success(t("products.listingDeleted"));
+  async function handleDelete(id) {
+    try {
+      const result = await deletePostApi(id);
+      if (result.success) {
+        deleteProduct(id);
+        toast.success(t("products.listingDeleted"));
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast.error('Failed to delete listing');
+    } finally {
+      setDeleteConfirm(null);
+    }
   }
 
-  function handleMarkSold(id, status) {
-    updateProduct(id, { status });
-    toast.success(`Product marked as ${status}`);
+  async function handleMarkSold(id, status) {
+    try {
+      const formData = new FormData();
+      formData.append('status', status);
+      const result = await updatePost(id, formData);
+      if (result.success) {
+        updateProductStore(id, { status });
+        toast.success(`Product marked as ${status}`);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
+    }
   }
 
   return (
@@ -430,20 +505,21 @@ export default function FarmerDashboard() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
-              <AnimatePresence>
+            <div className="space-y-4">
+              <AnimatePresence mode="popLayout">
                 {myProducts.map((product) => (
                   <motion.div
-                    key={product.id}
+                    key={product._id || product.id}
                     layout
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="bg-card border border-border rounded-xl p-4 flex gap-4 items-start"
+                    initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, x: -10 }}
+                    whileHover={{ scale: 1.01 }}
+                    className="bg-card border border-border/50 rounded-[2rem] p-5 flex gap-5 items-center hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group"
                   >
-                    <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-muted relative group-hover:scale-105 transition-transform duration-500">
                       <img
-                        src={product.imageUrl}
+                        src={product.images?.[0] || product.imageUrl || "/artifacts/fresh_produce_basket_1772729731157.png"}
                         alt={product.cropName}
                         className="w-full h-full object-cover"
                         onError={(e) => {
@@ -453,53 +529,60 @@ export default function FarmerDashboard() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h3 className="font-semibold text-foreground text-sm">
+                          <h3 className="font-display font-bold text-foreground text-lg group-hover:text-primary transition-colors">
                             {product.cropName}
                           </h3>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            <span>₹{product.price}/kg</span>
-                            <span>{product.quantity}</span>
-                            <span className="flex items-center gap-0.5">
-                              <MapPin className="w-2.5 h-2.5" />
-                              {product.location.split(",")[0]}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground font-medium">
+                            <span className="flex items-center gap-1.5">
+                              <IndianRupee className="w-3 h-3 text-primary/60" />
+                              {product.price}/kg
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Package className="w-3 h-3 text-primary/60" />
+                              {product.quantity}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <MapPin className="w-3 h-3 text-primary/60" />
+                              {(product.location || '').split(",")[0]}
                             </span>
                           </div>
                         </div>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${product.status === "active"
-                              ? "badge-active"
-                              : "badge-sold"
+                        <Badge
+                          variant="outline"
+                          className={`rounded-full px-3 py-1 font-bold ${product.status === "active"
+                            ? "bg-emerald-50 text-white border-0"
+                            : "bg-muted text-muted-foreground border-0"
                             }`}
                         >
                           {product.status === "active"
                             ? t("products.status.active")
                             : t("products.status.sold")}
-                        </span>
+                        </Badge>
                       </div>
-                      <div className="flex gap-2 mt-3 flex-wrap">
+                      <div className="flex gap-2 mt-4 flex-wrap">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs gap-1"
+                          className="h-9 px-4 rounded-xl text-xs gap-1.5 font-bold border-2 hover:bg-muted"
                           onClick={() => setEditProduct(product)}
                         >
-                          <Edit3 className="w-3 h-3" />
+                          <Edit3 className="w-3.5 h-3.5" />
                           {t("products.edit")}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs gap-1"
+                          className="h-9 px-4 rounded-xl text-xs gap-1.5 font-bold border-2 hover:bg-muted"
                           onClick={() =>
                             handleMarkSold(
-                              product.id,
+                              product._id || product.id,
                               product.status === "active" ? "sold" : "active",
                             )
                           }
                         >
-                          <RefreshCw className="w-3 h-3" />
+                          <RefreshCw className="w-3.5 h-3.5" />
                           {product.status === "active"
                             ? t("products.markSold")
                             : t("products.markActive")}
@@ -507,10 +590,10 @@ export default function FarmerDashboard() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => setDeleteConfirm(product.id)}
+                          className="h-9 px-4 rounded-xl text-xs gap-1.5 font-bold border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30"
+                          onClick={() => setDeleteConfirm(product._id || product.id)}
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           {t("products.delete")}
                         </Button>
                       </div>

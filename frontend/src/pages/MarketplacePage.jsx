@@ -35,15 +35,16 @@ import {
   Wheat,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAppStore } from "../stores/appStore";
+import { getAllPosts } from "../utils/api";
 
 // ── Unique locations from products ────────────────────────────────────────
 function getLocations(products) {
-  const locs = new Set(products.map((p) => p.location.split(",")[0].trim()));
+  const locs = new Set(products.map((p) => (p.location || '').split(",")[0].trim()).filter(Boolean));
   return Array.from(locs).sort();
 }
 
@@ -72,96 +73,107 @@ function ProductCard({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="group bg-card rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5 flex flex-col"
+      viewport={{ once: true }}
+      whileHover={{ y: -8, transition: { duration: 0.2 } }}
+      className="group bg-card rounded-[2rem] border border-border/50 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-shadow duration-300 flex flex-col"
     >
-      {/* Image */}
-      <div className="relative h-44 bg-muted overflow-hidden">
+      {/* Image Container */}
+      <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         <img
-          src={product.imageUrl}
+          src={product.images?.[0] || product.imageUrl || "/artifacts/fresh_produce_basket_1772729731157.png"}
           alt={product.cropName}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           onError={(e) => {
             e.currentTarget.src =
               "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f0fdf4'/%3E%3Ctext x='200' y='155' text-anchor='middle' font-size='48'%3E🌿%3C/text%3E%3C/svg%3E";
           }}
         />
-        {/* Status badge */}
-        <div className="absolute top-2 left-2">
-          <span
-            className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full backdrop-blur-sm ${product.status === "active"
-                ? "bg-emerald-500/90 text-white"
-                : "bg-gray-500/80 text-white"
+
+        {/* Top Badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 scale-90 origin-top-right">
+          <Badge className="bg-white/90 backdrop-blur-md text-primary hover:bg-white font-bold px-3 py-1 rounded-full shadow-sm">
+            ₹{product.price}/{t("products.kg")}
+          </Badge>
+          <Badge
+            className={`backdrop-blur-md border-0 px-3 py-1 rounded-full font-bold shadow-sm ${product.status === "active"
+              ? "bg-emerald-500 text-white"
+              : "bg-gray-500 text-white"
               }`}
           >
-            {product.status === "active" ? (
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            ) : null}
-            {t(`products.status.${product.status}`)}
-          </span>
-        </div>
-        {/* Price badge */}
-        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
-          <div className="flex items-center gap-0.5 text-white">
-            <IndianRupee className="w-3 h-3" />
-            <span className="font-bold text-sm">{product.price}</span>
-            <span className="text-white/70 text-xs">/kg</span>
-          </div>
+            {product.status === "active" ? t("products.active") : t("products.sold")}
+          </Badge>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4 flex-1 flex flex-col gap-2">
+      <div className="p-5 flex-1 flex flex-col gap-4">
         <div>
-          <h3 className="font-display font-semibold text-foreground text-base leading-tight line-clamp-1">
+          <h3 className="text-lg font-display font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
             {product.cropName}
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
             {product.description}
           </p>
         </div>
 
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Package className="w-3 h-3 flex-shrink-0" />
-            <span>{product.quantity}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{product.location}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Sprout className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">
-              {t("products.by")} {product.farmerName}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-muted/30">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold leading-none mb-1">
+              Quantity
             </span>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+              <Package className="w-3 h-3 text-primary/60" />
+              {product.quantity} kg
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold leading-none mb-1">
+              Location
+            </span>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+              <MapPin className="w-3 h-3 text-primary/60" />
+              <span className="truncate">{product.location}</span>
+            </div>
           </div>
         </div>
 
-        <div className="pt-1 mt-auto">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onView(product)}
-              className="flex-1 h-8 text-xs gap-1.5"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              {t("products.viewDetail")}
-            </Button>
-            {isBuyer && product.status === "active" && !isOwner && (
+        {/* Farmer Info */}
+        <div className="flex items-center gap-2 border-t border-border pt-4">
+          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <span className="text-xs font-bold text-muted-foreground truncate">
+            {product.userId?.name || product.farmerName || 'Unknown Farmer'}
+          </span>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onView(product)}
+            className="flex-1 h-9 text-[11px] gap-1.5 rounded-xl border-2 hover:bg-muted font-bold"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            {t("products.viewDetail")}
+          </Button>
+          {isBuyer && product.status === "active" && !isOwner && (
+            <motion.div whileTap={{ scale: 0.95 }} className="flex-1">
               <Button
                 size="sm"
                 onClick={() => onInterested(product)}
-                className="flex-1 h-8 text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="w-full h-9 text-[11px] gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold shadow-lg shadow-primary/20"
               >
                 <Send className="w-3.5 h-3.5" />
                 {t("products.interested")}
               </Button>
-            )}
-          </div>
+            </motion.div>
+          )}
         </div>
       </div>
     </motion.div>
@@ -171,7 +183,7 @@ function ProductCard({
 // ── Main marketplace ──────────────────────────────────────────────────────
 export default function MarketplacePage() {
   const { t } = useTranslation();
-  const { products, currentUser, addInterest, addNotification, interests } =
+  const { products, setProducts, currentUser, addInterest, addNotification, interests } =
     useAppStore();
 
   const [search, setSearch] = useState("");
@@ -184,6 +196,26 @@ export default function MarketplacePage() {
   const [interestProduct, setInterestProduct] = useState(null);
   const [interestMessage, setInterestMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch posts from backend API on mount
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getAllPosts();
+        if (data.success) {
+          setProducts(data.posts);
+        }
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        toast.error('Failed to load marketplace listings');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPosts();
+  }, [setProducts]);
 
   const locations = getLocations(products);
   const maxProductPrice = Math.max(...products.map((p) => p.price), 500);
@@ -192,13 +224,13 @@ export default function MarketplacePage() {
     return products
       .filter((p) => {
         const matchSearch = search.trim()
-          ? p.cropName.toLowerCase().includes(search.toLowerCase()) ||
-          p.description.toLowerCase().includes(search.toLowerCase()) ||
-          p.farmerName.toLowerCase().includes(search.toLowerCase())
+          ? (p.cropName || '').toLowerCase().includes(search.toLowerCase()) ||
+          (p.description || '').toLowerCase().includes(search.toLowerCase()) ||
+          (p.userId?.name || p.farmerName || '').toLowerCase().includes(search.toLowerCase())
           : true;
         const matchLocation =
           locationFilter === "all" ||
-          p.location.toLowerCase().includes(locationFilter.toLowerCase());
+          (p.location || '').toLowerCase().includes(locationFilter.toLowerCase());
         const matchPrice = p.price >= minPrice && p.price <= maxPrice;
         const matchStatus = statusFilter === "all" || p.status === statusFilter;
         return matchSearch && matchLocation && matchPrice && matchStatus;
@@ -227,57 +259,34 @@ export default function MarketplacePage() {
   async function handleInterest() {
     if (!interestProduct || !currentUser) return;
 
-    // Check duplicate
-    const exists = interests.find(
-      (i) => i.buyerId === currentUser.id && i.productId === interestProduct.id,
-    );
-    if (exists) {
-      toast.error(t("interests.alreadyInterested"));
-      return;
-    }
-
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 600));
+    try {
+      await api.post("/interests/create", {
+        postId: interestProduct._id || interestProduct.id,
+        farmerId: interestProduct.userId?._id || interestProduct.userId || interestProduct.farmerId,
+        message: interestMessage.trim() || t("interests.defaultMessage"),
+      });
 
-    const newInterest = {
-      id: `int-${Date.now()}`,
-      buyerId: currentUser.id,
-      buyerName: currentUser.name,
-      buyerPhone: currentUser.phone,
-      productId: interestProduct.id,
-      productName: interestProduct.cropName,
-      farmerId: interestProduct.farmerId,
-      status: "pending",
-      message:
-        interestMessage.trim() || "I am interested in buying your product.",
-      createdAt: new Date(),
-    };
-    addInterest(newInterest);
-
-    // Notification for farmer
-    addNotification({
-      id: `notif-${Date.now()}`,
-      userId: interestProduct.farmerId,
-      message: `${currentUser.name} is interested in your ${interestProduct.cropName} listing! Contact: +91-${currentUser.phone}`,
-      notifType: "interest",
-      readStatus: false,
-      createdAt: new Date(),
-    });
-
-    setIsSubmitting(false);
-    setInterestProduct(null);
-    setInterestMessage("");
-    toast.success(t("interests.interestSent"));
+      toast.success(t("interests.interestSent"));
+      setInterestProduct(null);
+      setInterestMessage("");
+    } catch (error) {
+      console.error("Error expressing interest:", error);
+      const msg = error.response?.data?.error || "Error expressing interest";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <div className="min-h-screen bg-background">
       {/* ── Hero banner ────────────────────────────────────────────────── */}
-      <div className="relative h-40 md:h-52 overflow-hidden">
+      <div className="relative h-40 md:h-64 overflow-hidden">
         <img
-          src="src/assets/nav-image.jpg"
+          src="/artifacts/meghalaya_farm_hero_1772729701685.png"
           alt="Farm marketplace"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-center opacity-80"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
         <div className="absolute inset-0 flex items-center px-6 md:px-10">
@@ -505,10 +514,10 @@ export default function MarketplacePage() {
             <AnimatePresence>
               {filteredProducts.map((product) => (
                 <ProductCard
-                  key={product.id}
+                  key={product._id || product.id}
                   product={product}
                   currentUserId={currentUser?.id ?? ""}
-                  isOwner={product.farmerId === currentUser?.id}
+                  isOwner={product.userId?._id === currentUser?.id || product.userId === currentUser?.id}
                   isBuyer={currentUser?.role === "buyer"}
                   onInterested={setInterestProduct}
                   onView={setSelectedProduct}
@@ -529,7 +538,7 @@ export default function MarketplacePage() {
             <>
               <div className="h-52 -mx-6 -mt-6 overflow-hidden rounded-t-lg">
                 <img
-                  src={selectedProduct.imageUrl}
+                  src={selectedProduct.images?.[0] || selectedProduct.imageUrl}
                   alt={selectedProduct.cropName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -545,8 +554,8 @@ export default function MarketplacePage() {
                   </DialogTitle>
                   <span
                     className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${selectedProduct.status === "active"
-                        ? "badge-active"
-                        : "badge-sold"
+                      ? "badge-active"
+                      : "badge-sold"
                       }`}
                   >
                     {selectedProduct.status === "active"
@@ -580,7 +589,7 @@ export default function MarketplacePage() {
                     },
                     {
                       label: t("common.by"),
-                      value: selectedProduct.farmerName,
+                      value: selectedProduct.userId?.name || selectedProduct.farmerName || 'Unknown',
                       icon: <Sprout className="w-3.5 h-3.5" />,
                     },
                   ].map(({ label, value, icon }) => (
@@ -641,7 +650,7 @@ export default function MarketplacePage() {
               <div className="bg-farm-green-pale rounded-xl p-3 flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                   <img
-                    src={interestProduct.imageUrl}
+                    src={interestProduct.images?.[0] || interestProduct.imageUrl}
                     alt={interestProduct.cropName}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -655,7 +664,7 @@ export default function MarketplacePage() {
                     {interestProduct.cropName}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    ₹{interestProduct.price}/kg · {interestProduct.farmerName}
+                    ₹{interestProduct.price}/kg · {interestProduct.userId?.name || interestProduct.farmerName || 'Unknown'}
                   </div>
                 </div>
               </div>

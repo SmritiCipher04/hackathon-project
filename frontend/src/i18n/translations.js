@@ -170,6 +170,42 @@ export const translations = {
     "common.viewAll": "View All",
     "common.seeMore": "See More",
     "common.selectLanguage": "Select Language",
+
+    // Home Page
+    "home.heroTitle": "Connecting Farmers Directly With Buyers",
+    "home.heroSubtitle": "Local Connect is the digital marketplace for Meghalaya and Mizoram's finest produce. Empowering small farmers with technology.",
+    "home.browseMarketplace": "Browse Marketplace",
+    "home.startSelling": "Start Selling",
+    "home.howItWorks": "How It Works",
+    "home.how1": "Farmers list their fresh harvests",
+    "home.how2": "Buyers find quality produce",
+    "home.how3": "Direct connection & fair trade",
+    "home.featuresTitle": "Platform Features",
+    "home.feature1": "Multilingual Support (Khasi, Mizo, Hindi)",
+    "home.feature2": "Real-time Notifications",
+    "home.feature3": "Cloud Media Management",
+    "home.impactTitle": "Supporting Our Local Community",
+    "home.impactDesc": "We help small-holder farmers get better visibility and fair prices for their hard work, boosting the regional economy of Northeast India.",
+
+    // About Page
+    "about.title": "Our Mission",
+    "about.problem": "Problem Statement",
+    "about.problemDesc": "Middlemen often reduce the profits of small farmers while consumers pay more for less fresh products.",
+    "about.mission": "Mission",
+    "about.missionDesc": "To bridge the gap between farm and table using simple, accessible technology.",
+    "about.vision": "Vision",
+    "about.visionDesc": "A sustainable, transparent, and digital-first agricultural ecosystem in the Northeast.",
+
+    // Contact Page
+    "contact.title": "Contact Us",
+    "contact.getInTouch": "Get In Touch",
+    "contact.name": "Name",
+    "contact.email": "Email",
+    "contact.subject": "Subject",
+    "contact.message": "Message",
+    "contact.send": "Send Message",
+    "contact.whatsapp": "WhatsApp Support",
+    "contact.phone": "Phone Support",
   },
 
   hi: {
@@ -336,6 +372,42 @@ export const translations = {
     "common.viewAll": "सभी देखें",
     "common.seeMore": "और देखें",
     "common.selectLanguage": "भाषा चुनें",
+
+    // Home Page
+    "home.heroTitle": "किसानों को सीधे खरीदारों से जोड़ना",
+    "home.heroSubtitle": "लोकल कनेक्ट मेघालय और मिजोरम की बेहतरीन उपज के लिए डिजिटल बाज़ार है। तकनीक के साथ छोटे किसानों को सशक्त बनाना।",
+    "home.browseMarketplace": "बाज़ार देखें",
+    "home.startSelling": "बेचना शुरू करें",
+    "home.howItWorks": "यह कैसे काम करता है",
+    "home.how1": "किसान अपनी ताजा फसल की सूची बनाते हैं",
+    "home.how2": "खरीदार गुणवत्तापूर्ण उपज पाते हैं",
+    "home.how3": "सीधा संबंध और उचित व्यापार",
+    "home.featuresTitle": "प्लेटफ़ॉर्म की विशेषताएं",
+    "home.feature1": "बहुभाषी सहायता (खासी, मिज़ो, हिंदी)",
+    "home.feature2": "वास्तविक समय सूचनाएं",
+    "home.feature3": "क्लाउड मीडिया प्रबंधन",
+    "home.impactTitle": "हमारे स्थानीय समुदाय का समर्थन",
+    "home.impactDesc": "हम छोटे किसानों को उनकी कड़ी मेहनत के लिए बेहतर दृश्यता और उचित मूल्य दिलाने में मदद करते हैं।",
+
+    // About Page
+    "about.title": "हमारा मिशन",
+    "about.problem": "समस्या विवरण",
+    "about.problemDesc": "बिचौलिए अक्सर छोटे किसानों के मुनाफे को कम कर देते हैं जबकि उपभोक्ता कम ताज़ा उत्पादों के लिए अधिक भुगतान करते हैं।",
+    "about.mission": "मिशन",
+    "about.missionDesc": "सरल, सुलभ तकनीक का उपयोग करके खेत और मेज के बीच की दूरी को कम करना।",
+    "about.vision": "दृष्टि",
+    "about.visionDesc": "पूर्वोत्तर में एक टिकाऊ, पारदर्शी और डिजिटल-प्रथम कृषि पारिस्थितिकी तंत्र।",
+
+    // Contact Page
+    "contact.title": "संपर्क करें",
+    "contact.getInTouch": "संपर्क में रहें",
+    "contact.name": "नाम",
+    "contact.email": "ईमेल",
+    "contact.subject": "विषय",
+    "contact.message": "संदेश",
+    "contact.send": "संदेश भेजें",
+    "contact.whatsapp": "व्हाट्सएप सपोर्ट",
+    "contact.phone": "फोन सपोर्ट",
   },
 
   khasi: {
@@ -502,6 +574,42 @@ export const translations = {
     "common.viewAll": "Miat Baroh",
     "common.seeMore": "Miat Leh",
     "common.selectLanguage": "Sngewbha Ktien",
+
+    // Home Page
+    "home.heroTitle": "Pyniasoh ia ki Khun Jingshong bad ki Nongthied",
+    "home.heroSubtitle": "Ka Local Connect ka dei ka iew digital na ka bynta ka Meghalaya bad Mizoram. Pynshlur ia ki nongrep rit.",
+    "home.browseMarketplace": "Leit sha ka Iew",
+    "home.startSelling": "Sdang ban Die",
+    "home.howItWorks": "Kumno ka Trei",
+    "home.how1": "Ki nongrep ki pynshong ia ka jingrep",
+    "home.how2": "Ki nongthied ki ioh ia ka mar babha",
+    "home.how3": "Ka jingiasoh bad ka dor kaba biang",
+    "home.featuresTitle": "Ki Jingbha ka Platform",
+    "home.feature1": "Ka Ktien (Khasi, Mizo, Hindi)",
+    "home.feature2": "Ka Jingpynbna Mynsiem",
+    "home.feature3": "Cloud Media Management",
+    "home.impactTitle": "Kyrshan ia ka Shnong ka Thaw",
+    "home.impactDesc": "Ngi iarap ia ki nongrep rit ban ioh ia ka dor kaba biang na ka bynta ka jingtrei shitom jong ki.",
+
+    // About Page
+    "about.title": "Ka Jingthmu",
+    "about.problem": "Ka Jingeh",
+    "about.problemDesc": "Ki middlemen ki shim ia ka bhah ki nongrep rit bad ki nongthied ki siew duna.",
+    "about.mission": "Ka Mission",
+    "about.missionDesc": "Ban pyniasoh ia ka lyngkha bad ka miej da ka jingstad reb.",
+    "about.vision": "Ka Vision",
+    "about.visionDesc": "Ka lympung rep kaba shai bad digital ha ka thain Shatei Lam-miet.",
+
+    // Contact Page
+    "contact.title": "Kynduh ia Ngi",
+    "contact.getInTouch": "Phone bad Email",
+    "contact.name": "Kyrteng",
+    "contact.email": "Email",
+    "contact.subject": "Subject",
+    "contact.message": "Jingthoh",
+    "contact.send": "Phah Jingthoh",
+    "contact.whatsapp": "WhatsApp Support",
+    "contact.phone": "Phone Support",
   },
 
   mizo: {
@@ -669,5 +777,41 @@ export const translations = {
     "common.viewAll": "Zawng En",
     "common.seeMore": "Zau En",
     "common.selectLanguage": "Tawng Seng",
+
+    // Home Page
+    "home.heroTitle": "Loneptu leh Lei tute tlang taka inzawmna",
+    "home.heroSubtitle": "Local Connect hi Meghalaya leh Mizoram thlai thar dahkhawmna digital bazaar a ni. Loneptu te tana hmanrua thar.",
+    "home.browseMarketplace": "Bazaar En Rawh",
+    "home.startSelling": "Zuar Tan Rawh",
+    "home.howItWorks": "Engtin nge a thawh?",
+    "home.how1": "Loneptu ten an thlai thar an dah",
+    "home.how2": "Lei tute tan thil tha zawnna",
+    "home.how3": "Inbiak tlangna leh man dik",
+    "home.featuresTitle": "Platform Thatna Te",
+    "home.feature1": "Tawng chi hrang hrang (Khasi, Mizo, Hindi)",
+    "home.feature2": "Hriattirna thar zel",
+    "home.feature3": "Cloud Media Management",
+    "home.impactTitle": "Kan ram hmasawnna tan",
+    "home.impactDesc": "Loneptu harsa zawk te tan an kuta thil thar an hralh theih nan leh man tha an hmuh nan kan thawk a ni.",
+
+    // About Page
+    "about.title": "Kan Thil Tum",
+    "about.problem": "Harsatna",
+    "about.problemDesc": "A kara mi ten loneptu te hlawkna an lo lak sak thin.",
+    "about.mission": "Mission",
+    "about.missionDesc": "Loneptu leh lei tute awlsam taka inzawm tir.",
+    "about.vision": "Vision",
+    "about.visionDesc": "Hmarchhak lama thlai thar hralhna digital hmun tha ber nih.",
+
+    // Contact Page
+    "contact.title": "Min Biak Pawh Nan",
+    "contact.getInTouch": "Min rawn bia rawh",
+    "contact.name": "Hming",
+    "contact.email": "Email",
+    "contact.subject": "Subject",
+    "contact.message": "Thuchah",
+    "contact.send": "Thawn Rawh",
+    "contact.whatsapp": "WhatsApp Support",
+    "contact.phone": "Phone Support",
   },
 };

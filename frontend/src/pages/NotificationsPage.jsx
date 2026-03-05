@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Bell,
@@ -9,7 +10,7 @@ import {
   Sprout,
   Star,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAppStore } from "../stores/appStore";
 
@@ -70,15 +71,18 @@ export default function NotificationsPage() {
     notifications,
     markNotificationRead,
     markAllNotificationsRead,
+    fetchNotifications,
     currentUser,
   } = useAppStore();
 
-  const myNotifs = notifications
-    .filter((n) => n.userId === currentUser?.id)
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const myNotifs = [...notifications].sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 
   const unreadCount = myNotifs.filter((n) => !n.readStatus).length;
 
@@ -140,8 +144,8 @@ export default function NotificationsPage() {
                   !notif.readStatus && markNotificationRead(notif.id)
                 }
                 className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${notif.readStatus
-                    ? "bg-card border-border"
-                    : "bg-card border-primary/30 shadow-sm ring-1 ring-primary/10"
+                  ? "bg-card border-border"
+                  : "bg-card border-primary/30 shadow-sm ring-1 ring-primary/10"
                   }`}
               >
                 <NotifIcon type={notif.notifType} />

@@ -5,17 +5,19 @@ import { defineConfig } from "vite";
 export default defineConfig({
   server: {
     port: 3000,
-    strictPort: true,
+    host: "0.0.0.0",
+    strictPort: false,
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    },
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:5000",
+        target: "http://127.0.0.1:5001",
         changeOrigin: true,
       },
     },
   },
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
   resolve: {
     alias: [
       {

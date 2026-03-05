@@ -24,8 +24,9 @@ import {
   User,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAppStore } from "../stores/appStore";
 
@@ -41,12 +42,18 @@ export default function Navbar() {
   const {
     currentUser,
     logout,
-    currentPage,
-    setCurrentPage,
     notifications,
+    fetchNotifications,
     setLanguage,
     language,
   } = useAppStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchNotifications();
+    }
+  }, [currentUser, fetchNotifications]);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.readStatus).length;
@@ -54,12 +61,12 @@ export default function Navbar() {
   // ── Nav links by role ────────────────────────────────────────────────
   const farmerLinks = [
     {
-      page: "marketplace",
+      to: "/marketplace",
       label: () => t("nav.marketplace"),
       icon: <Store className="w-4 h-4" />,
     },
     {
-      page: "farmerDashboard",
+      to: "/dashboard",
       label: () => t("nav.myListings"),
       icon: <ListOrdered className="w-4 h-4" />,
     },
@@ -67,12 +74,12 @@ export default function Navbar() {
 
   const buyerLinks = [
     {
-      page: "marketplace",
+      to: "/marketplace",
       label: () => t("nav.marketplace"),
       icon: <Store className="w-4 h-4" />,
     },
     {
-      page: "buyerDashboard",
+      to: "/dashboard",
       label: () => t("nav.interests"),
       icon: <Heart className="w-4 h-4" />,
     },
@@ -80,12 +87,12 @@ export default function Navbar() {
 
   const adminLinks = [
     {
-      page: "marketplace",
+      to: "/marketplace",
       label: () => t("nav.marketplace"),
       icon: <Store className="w-4 h-4" />,
     },
     {
-      page: "admin",
+      to: "/admin",
       label: () => t("nav.admin"),
       icon: <ShieldCheck className="w-4 h-4" />,
     },
@@ -98,13 +105,15 @@ export default function Navbar() {
         ? buyerLinks
         : adminLinks;
 
-  function handleNav(page) {
-    setCurrentPage(page);
-    setMobileOpen(false);
-  }
+  const publicLinks = [
+    { to: "/", label: () => t("home"), },
+    { to: "/about", label: () => t("about"), },
+    { to: "/contact", label: () => t("contact"), }, // Placeholder icon
+  ];
 
   function handleLogout() {
     logout();
+    navigate("/login");
     setMobileOpen(false);
   }
 
@@ -138,9 +147,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-[5rem] items-center justify-between gap-4">
           {/* Logo */}
-          <button
-            type="button"
-            onClick={() => handleNav("marketplace")}
+          <Link
+            to="/"
+            onClick={() => setMobileOpen(false)}
             className="flex items-center gap-2.5 flex-shrink-0"
           >
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -149,23 +158,40 @@ export default function Navbar() {
             <span className="font-display font-bold text-foreground text-base tracking-tight hidden sm:block">
               Local Connect
             </span>
-          </button>
+          </Link>
 
           {/* Desktop nav links */}
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map(({ page, label, icon }) => (
-              <button
-                type="button"
-                key={page}
-                onClick={() => handleNav(page)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === page
+            {publicLinks.map(({ to, label, icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
                     ? "bg-farm-green-pale text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
+                  }`
+                }
               >
                 {icon}
                 {label()}
-              </button>
+              </NavLink>
+            ))}
+            <div className="w-px h-4 bg-border mx-2" />
+            {navLinks.map(({ to, label, icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                    ? "bg-farm-green-pale text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`
+                }
+              >
+                {icon}
+                {label()}
+              </NavLink>
             ))}
           </nav>
 
@@ -198,13 +224,14 @@ export default function Navbar() {
             </DropdownMenu>
 
             {/* Notifications bell */}
-            <button
-              type="button"
-              onClick={() => handleNav("notifications")}
-              className={`relative p-1.5 rounded-lg transition-colors ${currentPage === "notifications"
+            <NavLink
+              to="/notifications"
+              className={({ isActive }) =>
+                `relative p-1.5 rounded-lg transition-colors ${isActive
                   ? "bg-farm-green-pale text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
+                }`
+              }
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -212,7 +239,7 @@ export default function Navbar() {
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
-            </button>
+            </NavLink>
 
             {/* User avatar + dropdown */}
             <DropdownMenu>
@@ -250,7 +277,10 @@ export default function Navbar() {
                   </p>
                 </div>
                 <DropdownMenuItem
-                  onClick={() => handleNav("profile")}
+                  onClick={() => {
+                    navigate("/profile");
+                    setMobileOpen(false);
+                  }}
                   className="gap-2 mt-1"
                 >
                   <User className="w-4 h-4" />
@@ -295,27 +325,31 @@ export default function Navbar() {
             className="md:hidden overflow-hidden border-t border-border"
           >
             <div className="px-4 py-3 space-y-1 bg-card">
-              {navLinks.map(({ page, label, icon }) => (
-                <button
-                  type="button"
-                  key={page}
-                  onClick={() => handleNav(page)}
-                  className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${currentPage === page
+              {[...publicLinks, ...navLinks].map(({ to, label, icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive
                       ? "bg-farm-green-pale text-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
+                    }`
+                  }
                 >
                   {icon}
                   {label()}
-                </button>
+                </NavLink>
               ))}
-              <button
-                type="button"
-                onClick={() => handleNav("notifications")}
-                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${currentPage === "notifications"
+              <NavLink
+                to="/notifications"
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive
                     ? "bg-farm-green-pale text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
+                  }`
+                }
               >
                 <div className="flex items-center gap-2.5">
                   <Bell className="w-4 h-4" />
@@ -326,7 +360,7 @@ export default function Navbar() {
                     {unreadCount}
                   </Badge>
                 )}
-              </button>
+              </NavLink>
               <button
                 type="button"
                 onClick={handleLogout}

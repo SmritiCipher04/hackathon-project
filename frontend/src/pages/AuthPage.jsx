@@ -15,7 +15,7 @@ import {
   Star,
   User,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { demoAdmin, demoBuyer, demoFarmer } from "../data/sampleData";
@@ -32,7 +32,7 @@ import {
   signInWithPhoneNumber,
   RecaptchaVerifier,
 } from "firebase/auth";
-import api from "../utils/api";
+import { firebaseLogin, updateProfile as updateProfileApi } from "../utils/api";
 
 // ── Language options ──────────────────────────────────────────────────────
 const LANGUAGES = [
@@ -57,6 +57,7 @@ export default function AuthPage() {
   const { t } = useTranslation();
   const {
     setCurrentUser,
+    setToken,
     setLanguage,
     setProducts,
     setInterests,
@@ -78,16 +79,15 @@ export default function AuthPage() {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const otpRefs = useRef([]);
 
-  // Function to save FCM token
+  // Function to save FCM token (best effort, non-blocking)
   const saveFcmToken = async () => {
     try {
       const fcmToken = await initializeNotifications();
       if (fcmToken) {
-        await api.post("/users/save-fcm-token", { fcmToken });
-        console.log("FCM token saved successfully");
+        console.log("FCM token acquired:", fcmToken);
       }
     } catch (fcmError) {
-      console.warn("Failed to save FCM token:", fcmError);
+      console.warn("Failed to get FCM token:", fcmError);
     }
   };
 
@@ -140,10 +140,10 @@ export default function AuthPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
 
-      const response = await api.post("/auth/firebase-login", { idToken });
-      if (response.data.success) {
-        localStorage.setItem("token", response.data.token);
-        setCurrentUser(response.data.user);
+      const data = await firebaseLogin(idToken);
+      if (data.success) {
+        setToken(data.token);
+        setCurrentUser(data.user);
 
         // Save FCM token for notifications
         await saveFcmToken();
@@ -191,15 +191,15 @@ export default function AuthPage() {
       const result = await confirmationResult.confirm(code);
       const idToken = await result.user.getIdToken();
 
-      const response = await api.post("/auth/firebase-login", { idToken });
-      if (response.data.success) {
-        localStorage.setItem("token", response.data.token);
-        setCurrentUser(response.data.user);
+      const data = await firebaseLogin(idToken);
+      if (data.success) {
+        setToken(data.token);
+        setCurrentUser(data.user);
 
         // Save FCM token for notifications
         await saveFcmToken();
 
-        setStep(3); // or straight to dashboard if user exists
+        setStep(3); // role selection step
       }
     } catch (error) {
       console.error(error);
@@ -222,16 +222,19 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // Update user profile on backend if needed
-      const newUser = {
+      // Update user profile on backend
+      const profileData = {
         name: name.trim(),
         role: role,
         location: location.trim(),
       };
-      // await api.put('/users/profile', newUser);
-      setCurrentUser({ ...newUser, phone });
+      const data = await updateProfileApi(profileData);
+      if (data.success) {
+        setCurrentUser(data.user);
+      }
       toast.success(t("auth.loginSuccess"));
     } catch (error) {
+      console.error(error);
       toast.error("Failed to complete profile");
     } finally {
       setIsLoading(false);
