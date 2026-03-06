@@ -303,7 +303,7 @@ export default function AuthPage() {
       {/* ── Left panel: hero ──────────────────────────────────────────── */}
       <div className="hidden md:flex md:w-1/2 relative flex-col justify-between p-10 overflow-hidden">
         <img
-          src="src/assets/signup.png"
+          src="https://images.pexels.com/photos/29988777/pexels-photo-29988777.jpeg"
           alt="Farm landscape"
           className="absolute inset-0 w-full h-full object-cover"
         />

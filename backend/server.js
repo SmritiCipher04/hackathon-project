@@ -18,28 +18,9 @@ const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:3000";
 
 app.use(
   helmet({
-    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginOpenerPolicy: { policy: "unsafe-allow-allow-popups" },
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "https://*.firebaseapp.com",
-          "https://*.google.com",
-        ],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "https:", "blob:"],
-        connectSrc: [
-          "'self'",
-          "https://*.firebase.com",
-          "https://*.googleapis.com",
-          "https://*.cloudinary.com",
-        ],
-        fontSrc: ["'self'", "data:"],
-      },
-    },
+    contentSecurityPolicy: false,
   }),
 );
 app.use(
