@@ -896,7 +896,7 @@ export default function AuthPage() {
             rel="noopener noreferrer"
             className="underline hover:text-foreground transition-colors"
           >
-            caffeine.ai
+            system.in
           </a>
         </p>
       </div>

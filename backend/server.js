@@ -14,7 +14,9 @@ const app = express();
 
 // ── Security Middleware ─────────────────────────────────────────────────────
 // Production-ready security settings
-const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:3000";
+const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000")
+  .split(",")
+  .map((o) => o.trim());
 
 app.use(
   helmet({
@@ -25,7 +27,7 @@ app.use(
 );
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

@@ -35,7 +35,12 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAppStore } from "../stores/appStore";
-import { createPost, updatePost, deletePost as deletePostApi, getAllPosts } from "../utils/api";
+import {
+  createPost,
+  updatePost,
+  deletePost as deletePostApi,
+  getAllPosts,
+} from "../utils/api";
 
 // ── Interest status badge ─────────────────────────────────────────────────
 function StatusBadge({ status }) {
@@ -62,19 +67,16 @@ function StatusBadge({ status }) {
 }
 
 // ── Add/Edit listing form ─────────────────────────────────────────────────
-function ListingForm({
-  initial,
-  onSave,
-  onCancel,
-  isSaving,
-}) {
+function ListingForm({ initial, onSave, onCancel, isSaving }) {
   const { t } = useTranslation();
   const [cropName, setCropName] = useState(initial?.cropName ?? "");
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [quantity, setQuantity] = useState(initial?.quantity ?? "");
   const [location, setLocation] = useState(initial?.location ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [imagePreview, setImagePreview] = useState(initial?.images?.[0] || initial?.imageUrl || "");
+  const [imagePreview, setImagePreview] = useState(
+    initial?.images?.[0] || initial?.imageUrl || "",
+  );
   const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
 
@@ -278,6 +280,7 @@ export default function FarmerDashboard() {
   const { t } = useTranslation();
   const {
     currentUser,
+    token,
     products,
     setProducts,
     addProduct,
@@ -286,6 +289,8 @@ export default function FarmerDashboard() {
     interests,
     updateInterestStatus,
   } = useAppStore();
+
+  const isAuthenticated = !!token || !!localStorage.getItem("token");
 
   const [activeTab, setActiveTab] = useState("listings");
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -304,7 +309,7 @@ export default function FarmerDashboard() {
           setProducts(data.posts);
         }
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error("Error fetching posts:", error);
       } finally {
         setIsLoading(false);
       }
@@ -313,33 +318,41 @@ export default function FarmerDashboard() {
   }, []);
 
   const myProducts = products.filter(
-    (p) => (p.userId?._id || p.userId) === currentUser?.id || p.farmerId === currentUser?.id
+    (p) =>
+      (p.userId?._id || p.userId) === currentUser?.id ||
+      p.farmerId === currentUser?.id,
   );
   const myInterests = interests.filter((i) => i.farmerId === currentUser?.id);
   const pendingCount = myInterests.filter((i) => i.status === "pending").length;
 
   async function handleAddProduct(data) {
+    if (!isAuthenticated) {
+      toast.error("Please login first to create listings");
+      return;
+    }
     setIsSaving(true);
     try {
       const formData = new FormData();
-      formData.append('cropName', data.cropName);
-      formData.append('price', data.price);
-      formData.append('quantity', data.quantity);
-      formData.append('location', data.location);
-      formData.append('description', data.description);
+      formData.append("cropName", data.cropName);
+      formData.append("price", data.price);
+      formData.append("quantity", data.quantity);
+      formData.append("location", data.location);
+      formData.append("description", data.description);
       if (data.imageFile) {
-        formData.append('images', data.imageFile);
+        formData.append("images", data.imageFile);
       }
 
       const result = await createPost(formData);
       if (result.success) {
         addProduct(result.post);
         toast.success(t("products.listingAdded"));
-        console.log(`✅ Card data successfully saved to collection: farmer_post`);
+        console.log(
+          `✅ Card data successfully saved to collection: farmer_post`,
+        );
       }
     } catch (error) {
-      console.error('Error creating post:', error);
-      toast.error('Failed to create listing');
+      console.error("Error creating post:", error);
+      toast.error("Failed to create listing");
     } finally {
       setIsSaving(false);
       setIsAddOpen(false);
@@ -351,13 +364,13 @@ export default function FarmerDashboard() {
     setIsSaving(true);
     try {
       const formData = new FormData();
-      formData.append('cropName', data.cropName);
-      formData.append('price', data.price);
-      formData.append('quantity', data.quantity);
-      formData.append('location', data.location);
-      formData.append('description', data.description);
+      formData.append("cropName", data.cropName);
+      formData.append("price", data.price);
+      formData.append("quantity", data.quantity);
+      formData.append("location", data.location);
+      formData.append("description", data.description);
       if (data.imageFile) {
-        formData.append('images', data.imageFile);
+        formData.append("images", data.imageFile);
       }
 
       const postId = editProduct._id || editProduct.id;
@@ -367,8 +380,8 @@ export default function FarmerDashboard() {
         toast.success(t("products.listingUpdated"));
       }
     } catch (error) {
-      console.error('Error updating post:', error);
-      toast.error('Failed to update listing');
+      console.error("Error updating post:", error);
+      toast.error("Failed to update listing");
     } finally {
       setIsSaving(false);
       setEditProduct(null);
@@ -383,8 +396,8 @@ export default function FarmerDashboard() {
         toast.success(t("products.listingDeleted"));
       }
     } catch (error) {
-      console.error('Error deleting post:', error);
-      toast.error('Failed to delete listing');
+      console.error("Error deleting post:", error);
+      toast.error("Failed to delete listing");
     } finally {
       setDeleteConfirm(null);
     }
@@ -393,20 +406,20 @@ export default function FarmerDashboard() {
   async function handleMarkSold(id, status) {
     try {
       const formData = new FormData();
-      formData.append('status', status);
+      formData.append("status", status);
       const result = await updatePost(id, formData);
       if (result.success) {
         updateProductStore(id, { status });
         toast.success(`Product marked as ${status}`);
       }
     } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
     }
   }
 
   return (
-    <div className=" mx-auto px-4 sm:px-6 py-6 mt-20 flex-col" >
+    <div className=" mx-auto px-4 sm:px-6 py-6 mt-20 flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -418,13 +431,29 @@ export default function FarmerDashboard() {
           </p>
         </div>
         {activeTab === "listings" && (
-          <Button
-            onClick={() => setIsAddOpen(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">{t("products.addListing")}</span>
-          </Button>
+          <>
+            <Button
+              onClick={() => setIsAddOpen(true)}
+              disabled={!isAuthenticated}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {t("products.addListing")}
+              </span>
+            </Button>
+            {!isAuthenticated && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  toast.info("Please login to add listings", { duration: 4000 })
+                }
+                className="ml-2"
+              >
+                Login Required
+              </Button>
+            )}
+          </>
         )}
       </div>
 
@@ -519,7 +548,11 @@ export default function FarmerDashboard() {
                   >
                     <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-muted relative group-hover:scale-105 transition-transform duration-500">
                       <img
-                        src={product.images?.[0] || product.imageUrl || "/artifacts/fresh_produce_basket_1772729731157.png"}
+                        src={
+                          product.images?.[0] ||
+                          product.imageUrl ||
+                          "/artifacts/fresh_produce_basket_1772729731157.png"
+                        }
                         alt={product.cropName}
                         className="w-full h-full object-cover"
                         onError={(e) => {
@@ -545,16 +578,17 @@ export default function FarmerDashboard() {
                             </span>
                             <span className="flex items-center gap-1.5">
                               <MapPin className="w-3 h-3 text-primary/60" />
-                              {(product.location || '').split(",")[0]}
+                              {(product.location || "").split(",")[0]}
                             </span>
                           </div>
                         </div>
                         <Badge
                           variant="outline"
-                          className={`rounded-full px-3 py-1 font-bold ${product.status === "active"
-                            ? "bg-emerald-50 text-white border-0"
-                            : "bg-muted text-muted-foreground border-0"
-                            }`}
+                          className={`rounded-full px-3 py-1 font-bold ${
+                            product.status === "active"
+                              ? "bg-emerald-50 text-white border-0"
+                              : "bg-muted text-muted-foreground border-0"
+                          }`}
                         >
                           {product.status === "active"
                             ? t("products.status.active")
@@ -591,7 +625,9 @@ export default function FarmerDashboard() {
                           variant="outline"
                           size="sm"
                           className="h-9 px-4 rounded-xl text-xs gap-1.5 font-bold border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30"
-                          onClick={() => setDeleteConfirm(product._id || product.id)}
+                          onClick={() =>
+                            setDeleteConfirm(product._id || product.id)
+                          }
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           {t("products.delete")}
